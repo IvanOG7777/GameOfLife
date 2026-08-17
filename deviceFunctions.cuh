@@ -5,8 +5,8 @@
 #ifndef GAMEOFLIFE_DEVICEFUNCTIONS_CUH
 #define GAMEOFLIFE_DEVICEFUNCTIONS_CUH
 
-constexpr int W = 5;
-constexpr int H = 5;
+constexpr int W = 10;
+constexpr int H = 10;
 
 
 

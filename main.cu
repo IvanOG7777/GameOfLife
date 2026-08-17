@@ -5,7 +5,7 @@
 #include <iostream>
 #include "deviceFunctions.cuh"
 
-constexpr int MAX_TIME = 10;
+constexpr int MAX_TIME = 25;
 
 
 bool validPosition(int row, int col) {
@@ -51,9 +51,10 @@ void changeCellState(int *array, const int *neighborArray) {
         for (int col = 0; col < W; col++) {
             int flatIndex = row * W + col;
 
-            if (array[flatIndex] == 1 && neighborArray[flatIndex] < 2) array[flatIndex] = 0;
-            if (array[flatIndex] == 1 && (neighborArray[flatIndex] == 2 || neighborArray[flatIndex] == 3)) continue;
-            if (array[flatIndex] == 0 && neighborArray[flatIndex] == 3) array[flatIndex] = 1;
+            if (array[flatIndex] == 1 && neighborArray[flatIndex] < 2) array[flatIndex] = 0; // underpopulation
+            if (array[flatIndex] == 1 && neighborArray[flatIndex] > 3) array[flatIndex] = 0; // overpopulation
+            if (array[flatIndex] == 1 && (neighborArray[flatIndex] == 2 || neighborArray[flatIndex] == 3)) continue; // enough neighbors
+            if (array[flatIndex] == 0 && neighborArray[flatIndex] == 3) array[flatIndex] = 1; // dead cell comes back to life
         }
     }
 }
@@ -71,11 +72,15 @@ int main() {
         exit(EXIT_FAILURE);
     }
 
-    for (int i = 0; i < 10; i++) {
-        int randRow = rand() % (4 - 0 + 1) + 0;
-        int randCol = rand() % (4 - 0 + 1) + 0;
+    for (int i = 0; i < 50; i++) {
+        int randRow = rand() % ((H - 1) - 0 + 1) + 0;
+        int randCol = rand() % ((H - 1) + 1) + 0;
 
         int flatIndex = randRow * W + randCol;
+
+        if (flatIndex >= H*W) {
+            array[flatIndex - H*W] = 1;
+        }
 
         array[flatIndex] = 1;
     }
