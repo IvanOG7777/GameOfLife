@@ -5,6 +5,8 @@
 #include <iostream>
 #include "deviceFunctions.cuh"
 
+constexpr int MAX_TIME = 10;
+
 
 bool validPosition(int row, int col) {
     if (row < 0 || row >= H || col < 0 || col >= W) return false;
@@ -69,56 +71,27 @@ int main() {
         exit(EXIT_FAILURE);
     }
 
-    array[0 * W + 1] = 1;
-    array[0 * W + 0] = 1;
-    array[1 * W + 2] = 1;
-    array[3 * W + 1] = 1;
-    array[2 * W + 2] = 1;
+    for (int i = 0; i < 10; i++) {
+        int randRow = rand() % (4 - 0 + 1) + 0;
+        int randCol = rand() % (4 - 0 + 1) + 0;
 
-    for (int row = 0; row < H; row++) {
-        for (int col = 0; col < W; col++) {
-            int flatIndex = row * W + col;
-            std:: cout << array[flatIndex] << " ";
-        }
-        std:: cout << std:: endl;
+        int flatIndex = randRow * W + randCol;
+
+        array[flatIndex] = 1;
     }
-
-    countNeighbor(array, neighborArray);
-
-    changeCellState(array, neighborArray);
-    std:: cout << std:: endl;
-
-    for (int row = 0; row < H; row++) {
-        for (int col = 0; col < W; col++) {
-            int flatIndex = row * W + col;
-            std:: cout << array[flatIndex] << " ";
+    int currentTime = 0;
+    while (currentTime++ < MAX_TIME) {
+        for (int row = 0; row < H; row++) {
+            for (int col = 0; col < W; col++) {
+                int flatIndex = row * W + col;
+                std:: cout << array[flatIndex] << " ";
+            }
+            std:: cout << std:: endl;
         }
-        std:: cout << std:: endl;
-    }
 
-    countNeighbor(array, neighborArray);
+        countNeighbor(array, neighborArray);
 
-    changeCellState(array, neighborArray);
-    std:: cout << std:: endl;
-
-    for (int row = 0; row < H; row++) {
-        for (int col = 0; col < W; col++) {
-            int flatIndex = row * W + col;
-            std:: cout << array[flatIndex] << " ";
-        }
-        std:: cout << std:: endl;
-    }
-
-    countNeighbor(array, neighborArray);
-
-    changeCellState(array, neighborArray);
-    std:: cout << std:: endl;
-
-    for (int row = 0; row < H; row++) {
-        for (int col = 0; col < W; col++) {
-            int flatIndex = row * W + col;
-            std:: cout << array[flatIndex] << " ";
-        }
+        changeCellState(array, neighborArray);
         std:: cout << std:: endl;
     }
 }
