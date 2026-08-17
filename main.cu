@@ -5,60 +5,6 @@
 #include <iostream>
 #include "deviceFunctions.cuh"
 
-constexpr int MAX_TIME = 25;
-
-
-bool validPosition(int row, int col) {
-    if (row < 0 || row >= H || col < 0 || col >= W) return false;
-    return true;
-}
-
-void countNeighbor(int *array, int *neighborCount) {
-    int directions[8][2] {
-        //bottom left, left, top left
-        {-1, -1}, {-1, 0}, {-1, 1},
-        // bottom, top
-        {0, -1}, {0, 1},
-        // bottom right, right, top right
-        {1, -1}, {1, 0}, {1, 1}
-    };
-
-
-    for (int row = 0; row < H; row++) {
-        for (int col = 0; col < W; col++) {
-            int count = 0;
-            int flatIndex = row * W + col;
-            for (auto &direction : directions) {
-                int x = row + direction[0];
-                int y = col + direction[1];
-
-                int innerFlatIndex = x * W + y;
-
-                if (innerFlatIndex < 0) continue;
-
-                if (validPosition(x, y) == true && array[innerFlatIndex] == 1) {
-                    count++;
-                }
-            }
-
-            neighborCount[flatIndex] = count;
-        }
-    }
-}
-
-void changeCellState(int *array, const int *neighborArray) {
-    for (int row = 0; row < H; row++) {
-        for (int col = 0; col < W; col++) {
-            int flatIndex = row * W + col;
-
-            if (array[flatIndex] == 1 && neighborArray[flatIndex] < 2) array[flatIndex] = 0; // underpopulation
-            if (array[flatIndex] == 1 && neighborArray[flatIndex] > 3) array[flatIndex] = 0; // overpopulation
-            if (array[flatIndex] == 1 && (neighborArray[flatIndex] == 2 || neighborArray[flatIndex] == 3)) continue; // enough neighbors
-            if (array[flatIndex] == 0 && neighborArray[flatIndex] == 3) array[flatIndex] = 1; // dead cell comes back to life
-        }
-    }
-}
-
 int main() {
 
     int *array = static_cast<int *>(calloc(H*W, sizeof(int)));
@@ -72,20 +18,76 @@ int main() {
         exit(EXIT_FAILURE);
     }
 
-    for (int i = 0; i < 50; i++) {
+    for (int i = 0; i < 60; i++) {
         int randRow = rand() % ((H - 1) - 0 + 1) + 0;
-        int randCol = rand() % ((H - 1) + 1) + 0;
+        int randCol = rand() % ((W - 1) - 0 + 1) + 0;
 
         int flatIndex = randRow * W + randCol;
 
-        if (flatIndex >= H*W) {
-            array[flatIndex - H*W] = 1;
-        }
+        if (flatIndex >= H*W) continue;
 
         array[flatIndex] = 1;
     }
-    int currentTime = 0;
-    while (currentTime++ < MAX_TIME) {
+
+    for (int row = 0; row < H; row++) {
+        for (int col = 0; col < W; col++) {
+            int flatIndex = row * W + col;
+            std:: cout << array[flatIndex] << " ";
+        }
+        std:: cout << std:: endl;
+    }
+    std:: cout << std:: endl;
+
+    int *deviceArray = nullptr;
+    int *deviceNeighborArray = nullptr;
+    cudaError err = {};
+
+    err = cudaMalloc(&deviceArray, H*W * sizeof(int));
+    if (err != cudaSuccess) {
+        std:: cerr << "FAILED TO ALLOCATE MEMORY FOR DEVICE ARRAY\n";
+        exit(EXIT_FAILURE);
+    }
+
+    err = cudaMalloc(&deviceNeighborArray, H*W * sizeof(int));
+    if (err != cudaSuccess) {
+        std:: cerr << "FAILED TO ALLOCATE MEMORY FOR DEVICE NEIGHBOR ARRAY\n";
+        exit(EXIT_FAILURE);
+    }
+
+    err = cudaMemcpy(deviceArray, array, H*W * sizeof(int), cudaMemcpyHostToDevice);
+    if (err != cudaSuccess) {
+        std:: cerr << "FAILED TO COPY ARRAY TO DEVICE ARRAY\n";
+        exit(EXIT_FAILURE);
+    }
+
+    dim3 TPB(32, 32);
+    dim3 blocks((W + TPB.x - 1) / TPB.x, (H + TPB.y - 1) / TPB.y);
+
+    std:: cout << "Total threads in block x: " << blocks.x * TPB.x << std:: endl;
+    std:: cout << "Total threads in block y: " << blocks.y * TPB.y << std:: endl;
+    std:: cout << "Totals threads is: " << blocks.x * TPB.x * blocks.y * TPB.y << std:: endl;
+    return 0;
+
+    int count = 0;
+    while (count++ < 100) {
+        kernelCountNeighbors<<<blocks, TPB>>>(deviceArray, deviceNeighborArray);
+        cudaDeviceSynchronize();
+        kernelChangeCellState<<<blocks, TPB>>>(deviceArray, deviceNeighborArray);
+        cudaDeviceSynchronize();
+
+        err = cudaMemcpy(array, deviceArray, H*W*sizeof(int), cudaMemcpyDeviceToHost);
+        if (err != cudaSuccess) {
+            std:: cerr << "FAILED TO COPY DEVICE ARRAY TO ARRAY\n";
+            exit(EXIT_FAILURE);
+        }
+
+        err = cudaMemcpy(neighborArray, deviceNeighborArray, H*W*sizeof(int), cudaMemcpyDeviceToHost);
+        if (err != cudaSuccess) {
+            std:: cerr << "FAILED TO COPY DEVICE NEIGHBOR ARRAY TO NEIGHBOR ARRAY\n";
+            exit(EXIT_FAILURE);
+        }
+
+        std:: cout << "Step: " << count << std:: endl;
         for (int row = 0; row < H; row++) {
             for (int col = 0; col < W; col++) {
                 int flatIndex = row * W + col;
@@ -93,10 +95,8 @@ int main() {
             }
             std:: cout << std:: endl;
         }
-
-        countNeighbor(array, neighborArray);
-
-        changeCellState(array, neighborArray);
         std:: cout << std:: endl;
     }
+
+    return 0;
 }

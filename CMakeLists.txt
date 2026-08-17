@@ -17,3 +17,7 @@ add_executable(GameOfLife
         deviceFunctions.cu
         deviceFunctions.cuh
 )
+
+add_executable(HostGameOfLife
+        hostMain.cpp
+)
