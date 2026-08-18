@@ -63,11 +63,6 @@ int main() {
     dim3 TPB(32, 32);
     dim3 blocks((W + TPB.x - 1) / TPB.x, (H + TPB.y - 1) / TPB.y);
 
-    std:: cout << "Total threads in block x: " << blocks.x * TPB.x << std:: endl;
-    std:: cout << "Total threads in block y: " << blocks.y * TPB.y << std:: endl;
-    std:: cout << "Totals threads is: " << blocks.x * TPB.x * blocks.y * TPB.y << std:: endl;
-    return 0;
-
     int count = 0;
     while (count++ < 100) {
         kernelCountNeighbors<<<blocks, TPB>>>(deviceArray, deviceNeighborArray);
