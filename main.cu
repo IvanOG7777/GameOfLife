@@ -18,9 +18,10 @@ int main() {
         exit(EXIT_FAILURE);
     }
 
+    std:: srand(std::time(nullptr));
     for (int i = 0; i < 60; i++) {
-        int randRow = rand() % ((H - 1) - 0 + 1) + 0;
-        int randCol = rand() % ((W - 1) - 0 + 1) + 0;
+        int randRow = rand() % H;
+        int randCol = rand() % W;
 
         int flatIndex = randRow * W + randCol;
 
@@ -37,6 +38,7 @@ int main() {
         std:: cout << std:: endl;
     }
     std:: cout << std:: endl;
+    return 0;
 
     int *deviceArray = nullptr;
     int *deviceNeighborArray = nullptr;
@@ -60,7 +62,7 @@ int main() {
         exit(EXIT_FAILURE);
     }
 
-    dim3 TPB(32, 32);
+    dim3 TPB(16, 16);
     dim3 blocks((W + TPB.x - 1) / TPB.x, (H + TPB.y - 1) / TPB.y);
 
     int count = 0;
@@ -92,6 +94,9 @@ int main() {
         }
         std:: cout << std:: endl;
     }
+
+    cudaFree(deviceArray);
+    cudaFree(deviceNeighborArray);
 
     return 0;
 }
